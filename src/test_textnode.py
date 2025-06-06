@@ -6,7 +6,10 @@ from textnode import (
     text_node_to_html_node,
     split_nodes_delimiter,
     text_to_textnodes,          # ← make sure this exists in textnode.py
+    markdown_to_blocks,
+    
 )
+from blocktype import BlockType, block_to_block_type
 
 
 class TestTextNode(unittest.TestCase):
@@ -105,7 +108,54 @@ class TestTextNode(unittest.TestCase):
             TextNode("link", TextType.LINK, "https://boot.dev"),
         ]
         self.assertListEqual(expected, text_to_textnodes(raw))
+    def test_markdown_to_blocks(self):
+        md = """
+This is **bolded** paragraph
 
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+class TestBlockTypes(unittest.TestCase):
+    def test_heading(self):
+        block = "## Sample Heading"
+        self.assertEqual(block_to_block_type(block), BlockType.HEADING)
+
+    def test_code_block(self):
+        block = "```print('Hello')```"
+        self.assertEqual(block_to_block_type(block), BlockType.CODE)
+
+    def test_quote_block(self):
+        block = "> A quoted line\n> Another quote"
+        self.assertEqual(block_to_block_type(block), BlockType.QUOTE)
+
+    def test_unordered_list(self):
+        block = "- Item A\n- Item B\n- Item C"
+        self.assertEqual(block_to_block_type(block), BlockType.UNORDERED_LIST)
+
+    def test_ordered_list(self):
+        block = "1. First\n2. Second\n3. Third"
+        self.assertEqual(block_to_block_type(block), BlockType.ORDERED_LIST)
+
+    def test_paragraph(self):
+        block = "Just a simple paragraph without markdown"
+        self.assertEqual(block_to_block_type(block), BlockType.PARAGRAPH)
+
+    def test_mixed_list_edge_case(self):
+        block = "- List item\n1. Not continuous"
+        self.assertEqual(block_to_block_type(block), BlockType.PARAGRAPH)
 
 if __name__ == "__main__":
     unittest.main()
